@@ -1,2 +1,0 @@
-The parent folder needs to exist as an empty directory for unit testing and git
-does not like to add empty folders. This file makes it not empty.
