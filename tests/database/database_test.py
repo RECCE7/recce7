@@ -32,21 +32,21 @@ class database_test(unittest.TestCase):
     # works just that the log statements are called.
     @patch.object(Logger,'__new__')
     def test_database_init(self,log):
-        self.db = database.Database()
-        self.assertIsInstance(self.db.global_config,GlobalConfig._GlobalConfig)
+        db = database.Database()
+        self.assertIsInstance(db.global_config,GlobalConfig._GlobalConfig)
         self.assertTrue(log.called)
 
     @patch.object(Logger,'__new__')
     def test_database_create_default_database(self,log):
-        self.db = database.Database()
-        self.db.create_default_database()
-        self.validator = datavalidator.DataValidator()
+        db = database.Database()
+        db.create_default_database()
+        validator = datavalidator.DataValidator()
         # check that the directory exists
         self.assertTrue(os.path.isdir(os.getcwd() + self.test_db_dir))
         # check that the database file exists
         self.assertTrue(os.path.isfile(os.getcwd() + self.test_db_file))
         # get the table names from the database
-        schema_table_list = self.validator.get_tables()
+        schema_table_list = validator.get_tables()
         # get the user defined tables from the configuration file
         config_table_list = util.get_config_table_list(self.gci.get_ports(),
                                                        self.gci.get_plugin_dictionary())
@@ -62,8 +62,8 @@ class database_test(unittest.TestCase):
 
     @patch.object(Logger,'__new__')
     def test_database_create_db_dir(self,log):
-        self.db = database.Database()
-        self.db.create_db_dir()
+        db = database.Database()
+        db.create_db_dir()
         self.assertTrue(os.path.isdir(os.getcwd() + self.test_db_dir))
         self.assertTrue(log.called)
         shutil.rmtree(os.getcwd() + self.test_db_dir)
@@ -72,30 +72,30 @@ class database_test(unittest.TestCase):
     def test_database_create_db_dir_already_exists(self,log):
         os.mkdir(os.getcwd() + self.test_db_dir)
         self.assertTrue(os.path.isdir(os.getcwd() + self.test_db_dir))
-        self.db = database.Database()
+        db = database.Database()
         log.reset_mock()
-        self.db.create_db_dir()
+        db.create_db_dir()
         self.assertFalse(log.called)
         shutil.rmtree(os.getcwd() + self.test_db_dir)
 
     @patch.object(Logger,'__new__')
     def test_database_create_db(self,log):
-        self.db = database.Database()
-        self.db.create_db_dir()
-        self.db.create_db()
+        db = database.Database()
+        db.create_db_dir()
+        db.create_db()
         self.assertTrue(os.path.isfile(os.getcwd() + self.test_db_file))
         self.assertTrue(log.called)
         shutil.rmtree(os.getcwd() + self.test_db_dir)
 
     @patch.object(Logger,'__new__')
     def test_database_update_schema(self,log):
-        self.db = database.Database()
-        self.db.create_db_dir()
-        self.db.create_db()
+        db = database.Database()
+        db.create_db_dir()
+        db.create_db()
         util.run_db_scripts(self.gci)
-        self.db.update_schema()
-        self.validator = datavalidator.DataValidator()
-        schema = self.validator.get_schema()
+        db.update_schema()
+        validator = datavalidator.DataValidator()
+        schema = validator.get_schema()
 
         self.assertTrue(schema['test_http'][5][1] == 'command')
         self.assertTrue(schema['test_http2'][6][1] == 'path')
@@ -106,11 +106,11 @@ class database_test(unittest.TestCase):
         self.gci.read_global_config()
         self.gci.read_plugin_config()
 
-        self.db2 = database.Database()
-        self.db2.update_schema()
-        self.validator2 = datavalidator.DataValidator()
+        db2 = database.Database()
+        db2.update_schema()
+        validator2 = datavalidator.DataValidator()
 
-        schema2 = self.validator2.get_schema()
+        schema2 = validator2.get_schema()
 
         self.assertTrue(schema2['test_http'][5][1] == 'unit_test_data_1')
         self.assertTrue(schema2['test_http2'][6][1] == 'unit_test_data_2')

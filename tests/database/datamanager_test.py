@@ -25,10 +25,10 @@ class datamanager_test(unittest.TestCase):
 
     @patch.object(Logger,'__new__')
     def test_datamanager_init(self,log):
-        self.dm = datamanager.DataManager()
+        dm = datamanager.DataManager()
         self.assertTrue(os.path.isdir(os.getcwd() + self.test_db_dir))
         self.assertTrue(os.path.isfile(os.getcwd() + self.test_db_file))
-        self.assertIsInstance(self.dm.q, dataqueue.DataQueue)
+        self.assertIsInstance(dm.q, dataqueue.DataQueue)
         shutil.rmtree(os.getcwd() + self.test_db_dir)
 
 #    @patch.object(Logger,'__new__')

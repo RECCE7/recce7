@@ -26,10 +26,10 @@ class dataqueue_test(unittest.TestCase):
 
     @patch.object(Logger,'__new__')
     def test_dataqueue_init(self,log):
-        self.db = database.Database()
-        self.db.create_default_database()
-        self.dq = dataqueue.DataQueue()
-        self.assertIsInstance(self.dq.dataQueue, queue.Queue)
+        db = database.Database()
+        db.create_default_database()
+        dq = dataqueue.DataQueue()
+        self.assertIsInstance(dq.dataQueue, queue.Queue)
         shutil.rmtree(os.getcwd() + self.test_db_dir)
 
     @patch.object(Logger,'__new__')
@@ -46,20 +46,20 @@ class dataqueue_test(unittest.TestCase):
                                       'localAddress':'192.168.0.42',
                                       'input_type':'test1',
                                       'user_input':'test input1'}}
-        self.db = database.Database()
-        self.db.create_default_database()
-        self.dq = dataqueue.DataQueue()
-        self.assertTrue(self.dq.check_empty())
-        self.dq.insert_into_data_queue(insert_dict)
-        self.assertFalse(self.dq.check_empty())
-        self.dq.insert_into_data_queue(insert_dict2)
-        self.assertTrue(self.dq.dataQueue.qsize() == 2)
-        self.result = self.dq.get_next_item()
-        self.assertTrue(insert_dict, self.result)
-        self.assertTrue(self.dq.dataQueue.qsize() == 1)
-        self.result2 = self.dq.get_next_item()
-        self.assertTrue(insert_dict2, self.result2)
-        self.assertTrue(self.dq.check_empty())
+        db = database.Database()
+        db.create_default_database()
+        dq = dataqueue.DataQueue()
+        self.assertTrue(dq.check_empty())
+        dq.insert_into_data_queue(insert_dict)
+        self.assertFalse(dq.check_empty())
+        dq.insert_into_data_queue(insert_dict2)
+        self.assertTrue(dq.dataQueue.qsize() == 2)
+        result = dq.get_next_item()
+        self.assertTrue(insert_dict, result)
+        self.assertTrue(dq.dataQueue.qsize() == 1)
+        result2 = dq.get_next_item()
+        self.assertTrue(insert_dict2, result2)
+        self.assertTrue(dq.check_empty())
 
         shutil.rmtree(os.getcwd() + self.test_db_dir)
 
@@ -72,9 +72,9 @@ class dataqueue_test(unittest.TestCase):
                                       'input_type':'test',
                                       'user_input':'test input',
                                       'fake_column':'bad data'}}
-        self.db = database.Database()
-        self.db.create_default_database()
-        self.dq = dataqueue.DataQueue()
-        self.assertFalse(self.dq.insert_into_data_queue(insert_dict))
+        db = database.Database()
+        db.create_default_database()
+        dq = dataqueue.DataQueue()
+        self.assertFalse(dq.insert_into_data_queue(insert_dict))
 
         shutil.rmtree(os.getcwd() + self.test_db_dir)
