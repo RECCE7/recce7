@@ -60,7 +60,13 @@ def validate_time_period(query_tokens):
                 uom  = None
                 units = None
 
-    #print("\n#debug validate_time_period: " + str(uom) + ": " + str(units))
+    # default if we aren't given valid uom and units
+    #TODO:  get this from a config file.
+    if uom is None or units is None:
+        uom = "days"
+        units = 1
+
+    log.debug("validate_time_period: " + str(uom) + ": " + str(units))
     return (uom, units)
 
 def get_path_query_tokens(path):

@@ -14,19 +14,15 @@ class PortsServiceHandler():
         units = None
         self.log.info("processing ports request:" + str(path_tokens) + str(query_tokens))
 
-        if len(query_tokens) > 0:
-            try:
-                time_period = utilities.validate_time_period(query_tokens)
-                uom = time_period[0]
-                units = time_period[1]
-            except ValueError:
-                rqst.badRequest(units)
-                return
 
-        # default if we aren't given valid uom and units
-        if uom is None or units is None:
-            uom = "days"
-            units = 1
+        try:
+            time_period = utilities.validate_time_period(query_tokens)
+            uom = time_period[0]
+            units = time_period[1]
+        except ValueError:
+            rqst.badRequest(units)
+            return
+
 
         if len(path_tokens) == 5:
             portNbr = utilities.validate_port_number(path_tokens[4])

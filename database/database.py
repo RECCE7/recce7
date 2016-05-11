@@ -25,7 +25,8 @@ class Database:
         run_db_scripts(self.global_config)
 
         self.update_schema()
-    
+
+
     def create_db_dir(self):
         """
         Creates the database directory if it doesn't already exist.
@@ -72,6 +73,9 @@ class Database:
         # definitions.
         DataValidator().update_tables_and_schema()
         self.update_table_structure()
+        #create indexes on plugin tables if they do not exist
+        Table_Init.create_index(cfg_tables,self.global_config)
+
 
     def create_non_exist_tables(self, table_diff):
         """

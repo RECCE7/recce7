@@ -19,7 +19,7 @@ class IpsManager:
 
 
     def get_data(self, ipaddress, uom, unit):
-        self.log.info("Retrieving ipaddress data: " + str(ipaddress) + "  uom:  " + uom + " size: " + str(unit))
+        self.log.info("Retrieving ipaddress data: " + str(ipaddress) + "  uom:  " + str(uom) + " size: " + str(unit))
 
         port_data = []
 

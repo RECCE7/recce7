@@ -27,7 +27,12 @@ def create_table(name, global_config):
     cursor.execute('CREATE TABLE ' + name + '(' + default_column_def + ')')
     connection.close()
 
-
+def create_index(cfg_tables, global_config):
+    connection = sqlite3.connect(global_config['Database']['path'])
+    cursor = connection.cursor()
+    for name in cfg_tables:
+        cursor.execute('CREATE INDEX IF NOT EXISTS DT_IDX_' + name + ' ON ' + name + ' (eventDateTime)')
+    connection.close()
 
 def add_columns(name, column_list, global_config):
     """
@@ -115,5 +120,9 @@ def delete_table(name, global_config):
         cursor.execute(
             "DELETE FROM sessions " +
             "WHERE table_name = '" + name + "';")
+    # drop index first
+    cursor.execute("DROP INDEX IF EXISTS DT_IDX_" + name)
+    # drop table
     cursor.execute("DROP TABLE IF EXISTS " + name + "_delme;")
+
     cursor.close()
