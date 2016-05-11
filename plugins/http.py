@@ -45,21 +45,14 @@ class HTTPPlugin(BasePlugin, BaseHTTPRequestHandler):
         socket.settimeout(60)
 
     def do_track(self):
-        try:
-            self.handle_one_request()
-        except OSError:
-            self.kill_plugin = True
-            return
-        except AttributeError:
-            self.kill_plugin = True
-            return
-        except UnicodeDecodeError:
-            self.kill_plugin = True
-            return
-
+        self.handle_one_request()
         self.format_data()
         self.do_save()
         self.kill_plugin = True
+
+    def close_descriptors(self):
+        self.rfile.close()
+        self.wfile.close()
 
     def get_body(self):
         too_long = False
@@ -156,7 +149,7 @@ class HTTPPlugin(BasePlugin, BaseHTTPRequestHandler):
     def do_POST(self):
         self.get_body()
         if self.path in GOOD_PATHS:
-            self.go_GET()
+            self.do_GET()
         elif self.path == '/login':
             self.send_error(403)
         else:

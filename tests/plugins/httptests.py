@@ -30,14 +30,197 @@ def setup_test_sockets(port):
 
 
 class HTTPPluginTest(unittest.TestCase):
-    def test_go(self):
-        pass
+    # Test the dictionary creation from get_entry inside the Base_Plugin
+    def test_get_entry(self):
+        # Test the get_entry for the http configurations
+        test_client, test_server = setup_test_sockets(8083)
 
-    def test_head(self):
-        pass
+        plugin_test = HTTPPlugin(test_server, setup_test_config(8083, 'http', 'HTTPPlugin'), None)
 
-    def test_post(self):
-        pass
+        self.assertEqual(plugin_test.get_entry(), {'test': {'command': '',
+                                                            'path': '',
+                                                            'headers': '',
+                                                            'body': ''}})
+
+        test_server.close()
+        test_client.close()
+
+    def test_get_200(self):
+        """
+        Test a GET to the login page
+        """
+        test_client, test_server = setup_test_sockets(8083)
+        plugin_test = HTTPPlugin(test_server, setup_test_config(8083, 'http', 'HTTPPlugin'), None)
+
+        test_client.send(b'GET / HTTP/1.1\r\n'
+                         b'Connection: close\r\n\r\n')
+
+        plugin_test.handle_one_request()
+        plugin_test.format_data()
+        entry = plugin_test.get_entry()
+
+        self.assertEqual(entry, {'test': {'command': 'GET',
+                                          'path': '/',
+                                          'headers': 'Connection: close\n\n',
+                                          'body': ''}})
+        self.assertEqual("200" in test_client.recv(1024).decode(), True)
+
+        test_server.close()
+        test_client.close()
+
+    def test_get_404(self):
+        """
+        Test a get to a nonexistent page
+        """
+        test_client, test_server = setup_test_sockets(8083)
+        plugin_test = HTTPPlugin(test_server, setup_test_config(8083, 'http', 'HTTPPlugin'), None)
+
+        test_client.send(b'GET /test HTTP/1.1\r\n'
+                         b'Connection: close\r\n\r\n')
+
+        plugin_test.handle_one_request()
+        plugin_test.format_data()
+        entry = plugin_test.get_entry()
+
+        self.assertEqual(entry, {'test': {'command': 'GET',
+                                          'path': '/test',
+                                          'headers': 'Connection: close\n\n',
+                                          'body': ''}})
+
+        self.assertEqual("404" in test_client.recv(1024).decode(), True)
+
+        test_server.close()
+        test_client.close()
+
+    def test_head_200(self):
+        """
+        Test a HEAD request to the login page
+        """
+        test_client, test_server = setup_test_sockets(8083)
+        plugin_test = HTTPPlugin(test_server, setup_test_config(8083, 'http', 'HTTPPlugin'), None)
+
+        test_client.send(b'HEAD / HTTP/1.1\r\n'
+                         b'Connection: close\r\n\r\n')
+
+        plugin_test.handle_one_request()
+        plugin_test.format_data()
+        entry = plugin_test.get_entry()
+
+        self.assertEqual(entry, {'test': {'command': 'HEAD',
+                                          'path': '/',
+                                          'headers': 'Connection: close\n\n',
+                                          'body': ''}})
+        self.assertEqual("200" in test_client.recv(1024).decode(), True)
+
+        test_server.close()
+        test_client.close()
+
+    def test_head_404(self):
+        """
+        Test a HEAD request to a bad page
+        """
+        test_client, test_server = setup_test_sockets(8083)
+        plugin_test = HTTPPlugin(test_server, setup_test_config(8083, 'http', 'HTTPPlugin'), None)
+
+        test_client.send(b'HEAD /test HTTP/1.1\r\n'
+                         b'Connection: close\r\n\r\n')
+
+        plugin_test.handle_one_request()
+        plugin_test.format_data()
+        entry = plugin_test.get_entry()
+
+        self.assertEqual(entry, {'test': {'command': 'HEAD',
+                                          'path': '/test',
+                                          'headers': 'Connection: close\n\n',
+                                          'body': ''}})
+        self.assertEqual("404" in test_client.recv(1024).decode(), True)
+
+        test_server.close()
+        test_client.close()
+
+    def test_post_200(self):
+        """
+        Test a POST to an empty url
+        """
+        test_client, test_server = setup_test_sockets(8083)
+        plugin_test = HTTPPlugin(test_server, setup_test_config(8083, 'http', 'HTTPPlugin'), None)
+
+        test_client.send(b'POST / HTTP/1.1\r\n'
+                         b'Connection: close\r\n'
+                         b'Content-type: text/html\r\n'
+                         b'Content-length: 27\r\n'
+                         b'\r\n'
+                         b'username=test&password=test')
+
+        plugin_test.handle_one_request()
+        plugin_test.format_data()
+        entry = plugin_test.get_entry()
+
+        self.assertEqual(entry, {'test': {'command': 'POST',
+                                          'path': '/',
+                                          'headers': 'Connection: close\nContent-type: text/html\n'
+                                                     'Content-length: 27\n\n',
+                                          'body': 'username=test&password=test'}})
+        self.assertEqual("200" in test_client.recv(1024).decode(), True)
+
+        test_server.close()
+        test_client.close()
+
+    def test_post_403(self):
+        """
+        Test a POST to the login page
+        """
+        test_client, test_server = setup_test_sockets(8083)
+        plugin_test = HTTPPlugin(test_server, setup_test_config(8083, 'http', 'HTTPPlugin'), None)
+
+        test_client.send(b'POST /login HTTP/1.1\r\n'
+                         b'Connection: close\r\n'
+                         b'Content-type: text/html\r\n'
+                         b'Content-length: 27\r\n'
+                         b'\r\n'
+                         b'username=test&password=test')
+
+        plugin_test.handle_one_request()
+        plugin_test.format_data()
+        entry = plugin_test.get_entry()
+
+        self.assertEqual(entry, {'test': {'command': 'POST',
+                                          'path': '/login',
+                                          'headers': 'Connection: close\nContent-type: text/html\n'
+                                                     'Content-length: 27\n\n',
+                                          'body': 'username=test&password=test'}})
+        self.assertEqual("403" in test_client.recv(1024).decode(), True)
+
+        test_server.close()
+        test_client.close()
+
+    def test_post_404(self):
+        """
+        Test a POST to a bad page
+        """
+        test_client, test_server = setup_test_sockets(8083)
+        plugin_test = HTTPPlugin(test_server, setup_test_config(8083, 'http', 'HTTPPlugin'), None)
+
+        test_client.send(b'POST /test HTTP/1.1\r\n'
+                         b'Connection: close\r\n'
+                         b'Content-type: text/html\r\n'
+                         b'Content-length: 27\r\n'
+                         b'\r\n'
+                         b'username=test&password=test')
+
+        plugin_test.handle_one_request()
+        plugin_test.format_data()
+        entry = plugin_test.get_entry()
+
+        self.assertEqual(entry, {'test': {'command': 'POST',
+                                          'path': '/test',
+                                          'headers': 'Connection: close\nContent-type: text/html\n'
+                                                     'Content-length: 27\n\n',
+                                          'body': 'username=test&password=test'}})
+        self.assertEqual("404" in test_client.recv(1024).decode(), True)
+
+        test_server.close()
+        test_client.close()
 
     def test_real_501(self):
         """
@@ -64,8 +247,9 @@ class HTTPPluginTest(unittest.TestCase):
                                   'path': '/',
                                   'headers': 'Connection: close\n\n',
                                   'body': ''}})
+        self.assertEqual("501" in test_client.recv(1024).decode(), True)
 
-        plugin_test.shutdown()
+        test_server.close()
         test_client.close()
 
     def test_fake_501(self):
@@ -88,13 +272,13 @@ class HTTPPluginTest(unittest.TestCase):
         plugin_test.format_data()
         entry = plugin_test.get_entry()
 
-        self.assertEqual(entry, {'test':
-                                 {'command': 'TEST',
-                                  'path': '/',
-                                  'headers': 'Connection: close\n\n',
-                                  'body': ''}})
+        self.assertEqual(entry, {'test': {'command': 'TEST',
+                                          'path': '/',
+                                          'headers': 'Connection: close\n\n',
+                                          'body': ''}})
+        self.assertEqual("501" in test_client.recv(1024).decode(), True)
 
-        plugin_test.shutdown()
+        test_server.close()
         test_client.close()
 
 if __name__ == '__main__':

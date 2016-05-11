@@ -24,24 +24,49 @@ class BasePlugin(Thread):
         """
         Thread.__init__(self)
         self._skt = _skt
+        self._localAddress = None
+        self._peerAddress = None
+        self.get_addresses()
         self._config = config
         self._framework = framework
-        self._localAddress = self._skt.getsockname()[0]
-        self._peerAddress = self._skt.getpeername()[0]
         self._session = None
         self.kill_plugin = False
+
+    def get_addresses(self):
+        try:
+            self._localAddress = self._skt.getsockname()[0]
+            self._peerAddress = self._skt.getpeername()[0]
+        #TODO write something to database for potential scans
+        except ConnectionResetError:
+            self.kill_plugin = True
+            self.close_descriptors()
+        except OSError:
+            self.kill_plugin = True
+            self.close_descriptors()
 
     def run(self):
         """
 
         """
-        try:
-            self.do_track()
-        except ConnectionResetError as cre:
-            error_number = cre.errno
-            if error_number == 54:  # ERRNO 54 is 'connection reset by peer'
-                # Log that it is possible we are being scanned, would want to write this to the db
-                print("Maybe we are being scanned")
+        if not self.kill_plugin:
+            try:
+                self.do_track()
+            except OSError:
+                self.kill_plugin = True
+                self.close_descriptors()
+                return
+            except AttributeError:
+                self.kill_plugin = True
+                self.close_descriptors()
+                return
+            except UnicodeDecodeError:
+                self.kill_plugin = True
+                self.close_descriptors()
+                return
+            except ValueError:
+                self.kill_plugin = True
+                self.close_descriptors()
+                return
 
         self.get_p0f_info()
 
@@ -92,6 +117,11 @@ class BasePlugin(Thread):
             self._framework.insert_data(entry)
         except AttributeError:
             return
+
+    def close_descriptors(self):
+        """
+        Close any files after an exception
+        """
 
     def shutdown(self):
         """
