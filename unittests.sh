@@ -33,8 +33,10 @@ coverage3 run -a tests/database/dataqueue_test.py > /dev/null
 coverage3 run -a tests/database/datavalidator_test.py > /dev/null
 coverage3 run -a tests/database/Table_Insert_test.py > /dev/null
 
-
 # Plugins:
+coverage3 run -a tests/plugins/basetests.py > /dev/null
+coverage3 run -a tests/plugins/httptests.py > /dev/null
+coverage3 run -a tests/plugins/telnettests.py > /dev/null
 
 # Report Server:
 
