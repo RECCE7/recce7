@@ -62,7 +62,7 @@ class DataValidator:
     def check_value_is_dict(self, value):
         if not isinstance(value, dict):
             self.log.error('Plugin attempted to save non-dictionary type: ' +
-                           type(value))
+                           str(type(value)))
             return False
         return True
 
@@ -71,7 +71,7 @@ class DataValidator:
         key = get_first_key_value_of_dictionary(value)
         if not isinstance(key, str):
             self.log.error('Table name must be a string: got ' +
-                           type(key) +
+                           str(type(key)) +
                            ' instead')
             return False
         return True
@@ -90,7 +90,7 @@ class DataValidator:
         key = get_first_key_value_of_dictionary(value)
         if not isinstance(value.get(key), dict):
             self.log.error('Row data must be a dictionary: got ' +
-                           type(value.get(key)) +
+                           str(type(value.get(key))) +
                            ' instead')
             return False
         return True
