@@ -78,3 +78,6 @@ class dataqueue_test(unittest.TestCase):
         self.assertFalse(dq.insert_into_data_queue(insert_dict))
 
         shutil.rmtree(os.getcwd() + self.test_db_dir)
+
+if __name__ == "__main__":
+    unittest.main()

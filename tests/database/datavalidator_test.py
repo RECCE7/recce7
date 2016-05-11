@@ -6,7 +6,6 @@ from unittest.mock import patch
 from common.logger import Logger
 import os
 import shutil
-from database import util
 
 class datavalidator_test(unittest.TestCase):
 
@@ -85,7 +84,7 @@ class datavalidator_test(unittest.TestCase):
         db.create_default_database()
         validator = datavalidator.DataValidator()
         self.assertTrue(set(validator.tables) == set(self.tables_test))
-        self.assertEquals(validator.table_schema,self.table_schema_test)
+        self.assertEqual(validator.table_schema,self.table_schema_test)
         shutil.rmtree(os.getcwd() + self.test_db_dir)
 
     @patch.object(Logger,'__new__')
@@ -103,7 +102,7 @@ class datavalidator_test(unittest.TestCase):
         db.create_default_database()
         validator = datavalidator.DataValidator()
         self.assertIsInstance(validator.get_schema(),dict)
-        self.assertEquals(validator.get_schema(),self.table_schema_test)
+        self.assertEqual(validator.get_schema(),self.table_schema_test)
         shutil.rmtree(os.getcwd() + self.test_db_dir)
 
     @patch.object(Logger,'__new__')
@@ -217,3 +216,5 @@ class datavalidator_test(unittest.TestCase):
         shutil.rmtree(os.getcwd() + self.test_db_dir)
 
 
+if __name__ == "__main__":
+    unittest.main()

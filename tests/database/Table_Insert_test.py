@@ -3,8 +3,6 @@ from database import database
 from database import Table_Insert
 from database import datavalidator
 from database import util
-from database import datamanager
-from database import dataqueue
 from common.globalconfig import GlobalConfig
 from unittest.mock import patch
 from common.logger import Logger
@@ -66,3 +64,6 @@ class Table_Insert_test(unittest.TestCase):
         for item in inner_dict:
             list.append(inner_dict[item])
         return list
+
+if __name__ == "__main__":
+    unittest.main()
