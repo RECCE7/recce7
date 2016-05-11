@@ -31,7 +31,5 @@ class datamanager_test(unittest.TestCase):
         self.assertIsInstance(dm.q, dataqueue.DataQueue)
         shutil.rmtree(os.getcwd() + self.test_db_dir)
 
-#    @patch.object(Logger,'__new__')
-#    def test_datamanager_run(self,log):
-#        self.dm = datamanager.DataManager()
-#        self.dm.start()
+if __name__ == "__main__":
+    unittest.main()

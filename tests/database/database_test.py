@@ -124,7 +124,8 @@ class database_test(unittest.TestCase):
 
         shutil.rmtree(os.getcwd() + self.test_db_dir)
 
-
+if __name__ == "__main__":
+    unittest.main()
 
 
 
