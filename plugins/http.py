@@ -1,6 +1,27 @@
-"""
+################################################################################
+#                                                                              #
+#                           GNU Public License v3.0                            #
+#                                                                              #
+################################################################################
+#   HunnyPotR is a honeypot designed to be a one click installable,            #
+#   open source honey-pot that any developer or administrator would be able    #
+#   to write custom plugins for based on specific needs.                       #
+#   Copyright (C) 2016 RECCE7                                                  #
+#                                                                              #
+#   This program is free software: you can redistribute it and/or modify       #
+#   it under the terms of the GNU General Public License as published by       #
+#   the Free Software Foundation, either version 3 of the License, or          #
+#   (at your option) any later version.                                        #
+#                                                                              #
+#   This program is distributed in the hope that it will be useful,            #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See their            #
+#   GNU General Public License for more details.                               #
+#                                                                              #
+#   You should have received a copy of the GNU General Public licenses         #
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.      #
+################################################################################
 
-"""
 
 from plugins.base import BasePlugin
 from socket import SocketIO
@@ -45,21 +66,14 @@ class HTTPPlugin(BasePlugin, BaseHTTPRequestHandler):
         socket.settimeout(60)
 
     def do_track(self):
-        try:
-            self.handle_one_request()
-        except OSError:
-            self.kill_plugin = True
-            return
-        except AttributeError:
-            self.kill_plugin = True
-            return
-        except UnicodeDecodeError:
-            self.kill_plugin = True
-            return
-
+        self.handle_one_request()
         self.format_data()
         self.do_save()
         self.kill_plugin = True
+
+    def close_descriptors(self):
+        self.rfile.close()
+        self.wfile.close()
 
     def get_body(self):
         too_long = False
@@ -156,7 +170,7 @@ class HTTPPlugin(BasePlugin, BaseHTTPRequestHandler):
     def do_POST(self):
         self.get_body()
         if self.path in GOOD_PATHS:
-            self.go_GET()
+            self.do_GET()
         elif self.path == '/login':
             self.send_error(403)
         else:

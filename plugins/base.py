@@ -1,3 +1,27 @@
+################################################################################
+#                                                                              #
+#                           GNU Public License v3.0                            #
+#                                                                              #
+################################################################################
+#   HunnyPotR is a honeypot designed to be a one click installable,            #
+#   open source honey-pot that any developer or administrator would be able    #
+#   to write custom plugins for based on specific needs.                       #
+#   Copyright (C) 2016 RECCE7                                                  #
+#                                                                              #
+#   This program is free software: you can redistribute it and/or modify       #
+#   it under the terms of the GNU General Public License as published by       #
+#   the Free Software Foundation, either version 3 of the License, or          #
+#   (at your option) any later version.                                        #
+#                                                                              #
+#   This program is distributed in the hope that it will be useful,            #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See their            #
+#   GNU General Public License for more details.                               #
+#                                                                              #
+#   You should have received a copy of the GNU General Public licenses         #
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.      #
+################################################################################
+
 """
 Plugin base class
 
@@ -24,24 +48,49 @@ class BasePlugin(Thread):
         """
         Thread.__init__(self)
         self._skt = _skt
+        self._localAddress = None
+        self._peerAddress = None
+        self.get_addresses()
         self._config = config
         self._framework = framework
-        self._localAddress = self._skt.getsockname()[0]
-        self._peerAddress = self._skt.getpeername()[0]
         self._session = None
         self.kill_plugin = False
+
+    def get_addresses(self):
+        try:
+            self._localAddress = self._skt.getsockname()[0]
+            self._peerAddress = self._skt.getpeername()[0]
+        #TODO write something to database for potential scans
+        except ConnectionResetError:
+            self.kill_plugin = True
+            self.close_descriptors()
+        except OSError:
+            self.kill_plugin = True
+            self.close_descriptors()
 
     def run(self):
         """
 
         """
-        try:
-            self.do_track()
-        except ConnectionResetError as cre:
-            error_number = cre.errno
-            if error_number == 54:  # ERRNO 54 is 'connection reset by peer'
-                # Log that it is possible we are being scanned, would want to write this to the db
-                print("Maybe we are being scanned")
+        if not self.kill_plugin:
+            try:
+                self.do_track()
+            except OSError:
+                self.kill_plugin = True
+                self.close_descriptors()
+                return
+            except AttributeError:
+                self.kill_plugin = True
+                self.close_descriptors()
+                return
+            except UnicodeDecodeError:
+                self.kill_plugin = True
+                self.close_descriptors()
+                return
+            except ValueError:
+                self.kill_plugin = True
+                self.close_descriptors()
+                return
 
         self.get_p0f_info()
 
@@ -92,6 +141,11 @@ class BasePlugin(Thread):
             self._framework.insert_data(entry)
         except AttributeError:
             return
+
+    def close_descriptors(self):
+        """
+        Close any files after an exception
+        """
 
     def shutdown(self):
         """

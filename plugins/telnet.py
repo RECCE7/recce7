@@ -23,44 +23,48 @@
 ################################################################################
 
 """
-
 """
 
+from math import ceil
 from plugins.base import BasePlugin
+from socket import SocketIO
+
+
+def set_command(help_description):
+    def func_decorator(function):
+        function.get_command = True
+        function.get_description = help_description
+        return function
+
+    return func_decorator
 
 
 class TelnetPlugin(BasePlugin):
     def __init__(self, socket, config, framework):
         BasePlugin.__init__(self, socket, config, framework)
-        self.input_type = None
-        self.user_input = None
+        self.input_type = ''
+        self.user_input = ''
+        self.io = SocketIO(self._skt, "rw")
         self._session = None
 
     def do_track(self):
         self.get_session()
 
-        try:
-            self.username()
-            self.password()
-            self.options()
-            while self._skt and not self.kill_plugin:
-                self.command()
-        except OSError:
-            self.kill_plugin = True
-            return
-        except AttributeError:
-            self.kill_plugin = True
-            return
-        except UnicodeDecodeError:
-            self.kill_plugin = True
-            return
+        self.username()
+        self.password()
+        self.options()
+        while self._skt and not self.kill_plugin:
+            self.command()
 
     def get_session(self):
         self._session = str(self.get_uuid4())
 
+    def close_descriptors(self):
+        self.io.close()
+
     def get_input(self):
         try:
-            data = self._skt.recv(1024).decode()
+            data = self.io.readline(1024).decode()
         except OSError:
             self.kill_plugin = True
             return
@@ -70,14 +74,14 @@ class TelnetPlugin(BasePlugin):
         return data
 
     def username(self):
-        self._skt.send(b'Username: ')
+        self.io.write(b'Username: ')
 
         self.input_type = 'username'
         self.user_input = self.get_input()
         self.do_save()
 
     def password(self):
-        self._skt.send(b'Password: ')
+        self.io.write(b'Password: ')
 
         self.input_type = 'password'
         self.user_input = self.get_input()
@@ -85,51 +89,91 @@ class TelnetPlugin(BasePlugin):
 
     def command(self):
         self.input_type = 'command'
-        self._skt.send(b'. ')
+        self.io.write(b'. ')
 
-        self.user_input = self.get_input()
-        self.do_save()
-        arguments = self.user_input.split(' ', 1)
+        line = self.get_input()
+        commands = line.split(';')
 
-        if len(arguments) == 0:
+        for i in commands:
+            if self.kill_plugin:
+                break
+            self.handle(i)
+
+    def handle(self, command):
+        if len(command) == 0:
             return
 
-        try:
-            getattr(self, arguments.pop(0))(arguments)
-        except AttributeError:
-            self._skt.send(b'%unrecognized command - type options for a list\r\n')
+        self.input_type = 'command'
+        self.user_input = command
+        self.do_save()
 
-    OPTIONS = ['options',
-               'help',
-               'echo',
-               'quit',]
+        arguments = command.split(' ', 1)
+        command = arguments.pop(0)
 
-    def options(self, arguments=None):
-        self._skt.send(b'\r\nWelcome, Please choose from the following options\r\n')
-        for option in self.OPTIONS:
-            option += '\t'
-            self._skt.sendall(option.encode())
-        self._skt.send(b'\r\n')
-
-    def help(self, arguments=None):
-        help_msg = b'echo:\t\tprompt to echo back typing\r\n' \
-                   b'help:\t\tdetailed description of options\r\n' \
-                   b'options:\tbasic list of options available to user\r\n' \
-                   b'quit:\t\tclose telnet connection to server\r\n'
-        self._skt.send(help_msg)
-
-    def echo(self, arguments=None):
-        if len(arguments) > 0:
-            for i in arguments:
-                self._skt.send(i.encode())
+        if self.is_command(command):
+            if len(arguments) == 0:
+                getattr(self, command)()
+            else:
+                getattr(self, command)(arguments.pop(0))
         else:
-            self._skt.send(b'Text? ')
-            self.input_type = 'echo'
-            self.user_input = self.get_input()
-            self._skt.send(self.user_input.encode())
-            self.do_save()
-        self._skt.send(b'\r\n')
+            self.io.write(b'%unrecognized command - type options for a list\r\n')
 
+    def is_command(self, command):
+        if hasattr(self, command):
+            if hasattr(getattr(self, command), 'get_command'):
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    @set_command('basic list of options available to user')
+    def options(self, arguments=None):
+        self.io.write(b'\r\nWelcome, Please choose from the following options\r\n')
+        line_count = 0
+        for option in dir(self):
+            if self.is_command(option):
+                if line_count == 5:
+                    self.io.write(b'\r\n')
+                    line_count = 0
+
+                tabs = b''
+                i = 0
+                try:
+                    for i in range(0, ceil((16 - len(option)) / 8)):
+                        tabs += b'\t'
+                except ZeroDivisionError:
+                    tabs = ':'
+                self.io.write(option.encode() + tabs)
+                line_count += 1
+        self.io.write(b'\r\n')
+
+    @set_command('detailed description of options')
+    def help(self, arguments=None):
+        for help in dir(self):
+            if self.is_command(help):
+                tabs = b':'
+                i = 0
+                try:
+                    for i in range(0, ceil((16 - len(help) - 1) / 8)):
+                        tabs += b'\t'
+                except ZeroDivisionError:
+                    tabs = ':'
+                self.io.write(help.encode() + tabs + getattr(getattr(self, help), 'get_description').encode() + b'\r\n')
+
+    @set_command('prompt to echo back typing')
+    def echo(self, arguments=None):
+        self.input_type = 'echo'
+        if arguments:
+            self.user_input = arguments
+        else:
+            self.io.write(b'Text? ')
+            self.user_input = self.get_input()
+            self.do_save()
+        self.io.write(self.user_input.encode() + b'\r\n')
+
+    @set_command('close telnet connection to server')
     def quit(self, arguments=None):
-        self._skt.send(b'\nGoodbye\n')
+        self.io.write(b'\nGoodbye\n')
+        self.io.close()
         self.kill_plugin = True
