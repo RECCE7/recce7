@@ -1,0 +1,124 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:          recce7
+# Required-Start:
+# Required-Stop:
+# Default-Start:
+# Default-Stop:
+# Short-Description: ensure recce7 is started
+### END INIT INFO
+
+set -e
+
+recce7_pid() {
+  ps h -C python3 | grep framework.frmwork | awk '{print $1}'
+}
+
+P0F_PID=`ps h -C p0f | awk '{print $1}'`
+RECCE7_PID=$(recce7_pid)
+
+start_p0f() {
+  if [ -n "$P0F_PID" ]; then
+    echo "p0f already running at PID $P0F_PID"
+  else
+    p0f -f /usr/local/share/p0f/p0f.fp -d -i `ip route get 8.8.8.8 | awk '{print $5}'` -s /var/local/recce7/p0f.sock 2>&1 | cat > /dev/null &
+  fi
+}
+
+export RECCE7_OS_DIST=debian
+export RECCE7_PLUGIN_CONFIG=/etc/recce7/configs/plugins.cfg
+export RECCE7_GLOBAL_CONFIG=/etc/recce7/configs/global.cfg
+export RECCE7_PATH=/usr/sbin/recce7/
+export PYTHONPATH=$RECCE7_PATH
+
+start_recce7() {
+  cd $RECCE7_PATH
+  if [ -n "$RECCE7_PID" ]; then
+    echo "recce7 already running at PID $RECCE7_PID"
+  else
+    authbind python3 -m framework.frmwork 2>&1 | cat > /dev/null &
+  fi
+}
+
+stop_p0f() {
+  if [ -n "$P0F_PID" ]; then
+    kill -9 $P0F_PID
+  else
+    echo "p0f not running...?"
+  fi
+}
+
+# no. of seconds to wait for recce7 to shut down
+RECCE7_WAIT_DIE=10
+
+stop_recce7() {
+  if [ -n "$RECCE7_PID" ]; then
+    kill -2 $RECCE7_PID
+    echo "Waiting up to $RECCE7_WAIT_DIE seconds for recce7 to shut down:"
+    for ((i=0;i<$RECCE7_WAIT_DIE;i++)); do
+      RECCE7_PID=$(recce7_pid)
+      if [ -z "$RECCE7_PID" ]; then
+        i=$RECCE7_WAIT_DIE
+      else
+        echo -n .
+        sleep 1
+      fi
+    done
+    echo
+    RECCE7_PID=$(recce7_pid)
+    if [ -n "$RECCE7_PID" ]; then
+      echo "recce7 is still running - killing"
+      kill -9 $RECCE7_PID
+      sleep 1
+      RECCE7_PID=$(recce7_pid)
+      if [ -n "$RECCE7_PID" ]; then
+        echo "recce7 is still running; you kill it"
+      fi
+    fi
+  else
+    echo "recce7 is not running"
+  fi
+}
+
+start_all() {
+  start_p0f
+  start_recce7
+}
+
+stop_all() {
+  stop_recce7
+  stop_p0f
+}
+
+case $1 in
+  start)
+    start_all
+    ;;
+
+  stop)
+    stop_all
+    ;;
+
+  restart)
+    stop_all
+    start_all
+    ;;
+
+  reload)
+    echo not supported
+    ;;
+
+  status)
+    if [ -n "$RECCE7_PID" ]; then
+      echo "RECCE7 is running at PID $RECCE7_PID"
+    else
+      echo "RECCE7 is not running"
+    fi
+    ;;
+
+  *)
+    echo "Usage: /etc/init.d/recce7 {start|stop|restart|status}"
+    exit 1
+    ;;
+esac

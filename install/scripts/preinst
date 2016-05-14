@@ -1,0 +1,3 @@
+#!/bin/sh
+
+#echo "deb http://http.us.debian.org/debian/ testing non-free contrib main" >> /etc/apt/sources.list
