@@ -22,22 +22,29 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.      #
 ################################################################################
 
-import matplotlib.pyplot as plt
-import numpy as np
 import os.path
-import pickle
 import sqlite3
+
+have_basemap = True
 
 from common.globalconfig import GlobalConfig
 from common.logger import Logger
-from mpl_toolkits.basemap import Basemap
-from PIL import ImageFont
-from PIL import Image
-from PIL import ImageDraw
 from reportserver.manager.IpsManager import IpsManager
 from reportserver.manager import dateTimeUtility
 from reportserver.manager import utilities
 
+try:
+    import matplotlib.pyplot as plt
+    import pickle
+    from PIL import ImageFont
+    from PIL import Image
+    from PIL import ImageDraw
+    from mpl_toolkits.basemap import Basemap
+except ImportError as e:
+    have_basemap = False
+    print(
+        'Basemap not found; WorldMap will not be available. Please visit '
+        'http://recce7.github.io/ for Basemap installation instructions.')
 
 badIpAddress = {
     'error': 'invalid ipaddress given'}
@@ -60,7 +67,8 @@ def preload_map():
     global pickle_bytes
     pickle_bytes = pickle.dumps(ip_map, -1)
 
-preload_map()
+if have_basemap:
+    preload_map()
 
 
 class WorldmapServiceHandler():
@@ -71,6 +79,29 @@ class WorldmapServiceHandler():
         self.global_config.read_global_config()
 
     def process(self, rqst, path_tokens, query_tokens):
+        global have_basemap
+        if not have_basemap:
+            err_msg = \
+                ('<html><head><title>WorldMap</title></head><body>'
+                'To enable WorldMap generation, please visit '
+                '<a href="https://recce7.github.io/">the documentation</a> and '
+                'follow the directions for installing the Basemap library.'
+                '</body></html>')
+            rqst.send_response(200)
+
+            #todo make this configurable for allow-origin
+            rqst.send_header("Access-Control-Allow-Origin","http://localhost:8000")
+            rqst.send_header('Content-Type', 'text/html')
+            rqst.send_header('Content-Length', len(err_msg))
+            rqst.end_headers()
+            rqst.flush_headers()
+
+            rqst.wfile.write(bytes(err_msg, "utf-8"))
+
+            rqst.wfile.flush()
+
+            return
+
         uom = None
         units = None
         self.log.info("processing ipaddress request:" + str(path_tokens) + str(query_tokens))
@@ -97,7 +128,6 @@ class WorldmapServiceHandler():
         #merge the results togoether
         #build the map
         #probably want to look at the PortsServiceHandler.py or IpsServiceHandler.py to follow those patterns.
-
         ip_map = pickle.loads(pickle_bytes)
 
         pts = self.get_point_list(uom, units)
