@@ -9,3 +9,6 @@ TestDB.db
 .coverage
 *.log
 honeyDB*
+*.png
+ip_map.pickle
+

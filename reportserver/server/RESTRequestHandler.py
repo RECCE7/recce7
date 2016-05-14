@@ -1,10 +1,36 @@
+################################################################################
+#                                                                              #
+#                           GNU Public License v3.0                            #
+#                                                                              #
+################################################################################
+#   HunnyPotR is a honeypot designed to be a one click installable,            #
+#   open source honey-pot that any developer or administrator would be able    #
+#   to write custom plugins for based on specific needs.                       #
+#   Copyright (C) 2016 RECCE7                                                  #
+#                                                                              #
+#   This program is free software: you can redistribute it and/or modify       #
+#   it under the terms of the GNU General Public License as published by       #
+#   the Free Software Foundation, either version 3 of the License, or          #
+#   (at your option) any later version.                                        #
+#                                                                              #
+#   This program is distributed in the hope that it will be useful,            #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See their            #
+#   GNU General Public License for more details.                               #
+#                                                                              #
+#   You should have received a copy of the GNU General Public licenses         #
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.      #
+################################################################################
+
 import json
 from reportserver.manager import utilities
 from http.server import BaseHTTPRequestHandler
+from common.globalconfig import GlobalConfig
 
 
 from reportserver.server.PortsServiceHandler import PortsServiceHandler
 from reportserver.server.IpsServiceHandler import IpsServiceHandler
+from reportserver.server.WorldmapServiceHandler import WorldmapServiceHandler
 
 
 
@@ -31,6 +57,8 @@ class RestRequestHandler (BaseHTTPRequestHandler):
                     PortsServiceHandler().process(self, path_tokens, query_tokens)
                 elif str(path_tokens[3]) == "ipaddresses":
                     IpsServiceHandler().process(self, path_tokens, query_tokens)
+                elif str(path_tokens[3]) == "worldmap":
+                    WorldmapServiceHandler().process(self, path_tokens, query_tokens)
                 elif str(path_tokens[3] == ""):
                     self.showIndex()
                 else:
@@ -43,9 +71,10 @@ class RestRequestHandler (BaseHTTPRequestHandler):
 
 
     def get_full_url_path(self):
-        # TODO:  how to get full path here??
-        #print("address : " + str(self.client_address))
-        full_path = 'http://%s:%s/v1/analytics' % (str(self.client_address[0]), str(8080))
+        self.g_config = GlobalConfig()
+        self.host = self.g_config.get_report_server_host()
+        self.port = self.g_config.get_report_server_port()
+        full_path = 'http://%s:%s/v1/analytics' % (str(self.host), str(self.port))
         return full_path
 
     def getIndexPayload(self):
@@ -81,6 +110,25 @@ class RestRequestHandler (BaseHTTPRequestHandler):
         self.wfile.write(bytes(json_result, "utf-8"))
 
         self.wfile.flush()
+
+        return
+
+    def sendPngResponse(self, filepath, responseCode):
+
+        # Note:  responseCode must be set before headers in python3!!
+        # see this post:
+        # http://stackoverflow.com/questions/23321887/python-3-http-server-sends-headers-as-output/35634827#35634827
+        f=open(filepath, 'rb')
+        self.send_response(responseCode)
+        # todo make this configurable for allow-origin
+        self.send_header("Access-Control-Allow-Origin", "http://localhost:8000")
+        self.send_header('Content-Type', 'image/png')
+        #self.send_header('Content-Length', len(json_result))
+        self.end_headers()
+        self.flush_headers()
+        self.wfile.write(f.read())
+        self.wfile.flush()
+        f.close()
 
         return
 

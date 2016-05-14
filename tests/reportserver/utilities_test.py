@@ -42,7 +42,7 @@ class Utilities_Test(unittest.TestCase):
 
         #the equal sign is missing...we should return None, None and give up.
         result = utilities.validate_time_period(["days1000"])
-        self.assertEqual((None, None), result, "expected a tuple of None,None")
+        self.assertEqual(("days", 1), result, "expected a tuple of days,1")
 
     def test_get_path_query_tokens(self):
         result = utilities.get_path_query_tokens("/v1/analytics/ports/23")
