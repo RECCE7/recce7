@@ -67,7 +67,8 @@ def preload_map():
     global pickle_bytes
     pickle_bytes = pickle.dumps(ip_map, -1)
 
-preload_map()
+if have_basemap:
+    preload_map()
 
 
 class WorldmapServiceHandler():
