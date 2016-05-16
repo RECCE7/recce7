@@ -26,7 +26,12 @@ start_p0f() {
   fi
 }
 
-export RECCE7_OS_DIST=debian
+if [ -f /etc/debian_version ]; then
+    export RECCE7_OS_DIST=debian
+else
+    export RECCE7_OS_DIST=centos
+fi
+
 export RECCE7_PLUGIN_CONFIG=/etc/recce7/configs/plugins.cfg
 export RECCE7_GLOBAL_CONFIG=/etc/recce7/configs/global.cfg
 export RECCE7_PATH=/usr/sbin/recce7/
