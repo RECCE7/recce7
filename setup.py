@@ -1,7 +1,7 @@
 from distutils.core import setup
 setup(name='recce7',
       version='1.0',
-      description='Report Server',
+      description='Honey Pot',
       author='Jesse Nelson',
       author_email='jnels124@msudenver.edu',
       options={'bdist_rpm': {'post_install': 'install/scripts/cent-postinst'}},
